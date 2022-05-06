@@ -810,8 +810,8 @@ VkShaderModule HelloSquareApplication::createShaderModule(const std::vector<char
 }
 
 void HelloSquareApplication::createGraphicsPipeline() {
-    auto fragShaderCode = readFile("fragShader.spv");
-    auto vertShaderCode = readFile("vertShader.spv");
+    auto fragShaderCode = readFile("shaders/fragShader.frag.spv");
+    auto vertShaderCode = readFile("shaders/vertShader.vert.spv");
     
 
     auto bindingDescriptions = Vertex::getBindingDescription();
