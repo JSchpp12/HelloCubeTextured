@@ -2,6 +2,17 @@
 
 typedef std::chrono::high_resolution_clock Clock;
 
+bool HelloSquareApplication::spin = true; 
+
+void HelloSquareApplication::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_0) {
+            spin = spin ? false : true;
+        }
+    }
+}
+
 void HelloSquareApplication::mainLoop() {
     int frameCount = 0;
 
@@ -203,6 +214,11 @@ void HelloSquareApplication::cleanupSwapChain() {
     vkDestroyDescriptorPool(device, descriptorPool, nullptr); 
 }
 
+HelloSquareApplication::HelloSquareApplication()
+{
+
+}
+
 void HelloSquareApplication::run() {
     initWindow();
     initVulkan();
@@ -256,6 +272,9 @@ void HelloSquareApplication::initWindow() {
     glfwSetWindowUserPointer(window, this);
 
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+
+    //set input callback events 
+    auto callback = glfwSetKeyCallback(window, HelloSquareApplication::key_callback); 
 }
 
 void HelloSquareApplication::createSwapChain() {
@@ -1662,7 +1681,13 @@ void HelloSquareApplication::updateUniformBuffer(uint32_t currentImage)
 
     //glm::mat4(1,0f) = identity matrix
     //time * radians(90) = rotate 90degrees per second
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    if (spin) {
+        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    }
+    else {
+        ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    }
+
     //ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); 
 
     //look at geometry from above at 45 degree angle 

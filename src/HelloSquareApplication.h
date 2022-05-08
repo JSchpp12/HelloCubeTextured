@@ -31,11 +31,15 @@ class HelloSquareApplication
 
 public:
 
+    HelloSquareApplication();
     void run();
 
 private:
     std::chrono::steady_clock::time_point lastColorUpdateTime; //the time when the colors were last updated
     std::vector<VertexColor> vertexColors; 
+
+    /* Runtime Vars */
+    static bool spin; 
 
     struct Vertex {
         glm::vec3 pos;
@@ -251,6 +255,12 @@ private:
         std::vector<VkSurfaceFormatKHR> formats;
         std::vector<VkPresentModeKHR> presentModes;
     };
+
+
+    /// <summary>
+    /// Callback function for keyboard events
+    /// </summary>
+    static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
     /// <summary>
     /// Definition of vulkan main loop
