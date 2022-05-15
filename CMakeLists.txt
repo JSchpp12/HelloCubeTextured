@@ -6,7 +6,7 @@ cmake_minimum_required (VERSION 3.8)
 find_package(Vulkan REQUIRED FATAL_ERROR)
 
 # Add source to this project's executable.
-add_executable (HelloSquare "src/HelloSquare.cpp" "src/HelloSquare.h" "src/HelloSquareApplication.cpp" "src/HelloSquareApplication.h" "src/VertexColor.h" "src/VertexColor.cpp"  )
+add_executable (HelloSquare "src/HelloSquare.cpp" "src/HelloSquare.h" "src/HelloSquareApplication.cpp" "src/HelloSquareApplication.h" "src/VertexColor.h" "src/VertexColor.cpp" "src/Vertex.h" "src/VulkanObject.h" "src/VulkanObject.cpp")
 
 set_property(TARGET HelloSquare PROPERTY CXX_STANDARD 17)
 
@@ -55,7 +55,10 @@ add_custom_command(TARGET HelloSquare POST_BUILD
 
 
 if (WIN32)
-	target_include_directories(HelloSquare PUBLIC "${PROJECT_BINARY_DIR}"
+	target_include_directories(HelloSquare PUBLIC "${PROJECT_BINARY_DIR}/"
+												  "${PROJECT_BINARY_DIR}/classes/"
+												  "${PROJECT_BINARY_DIR}/interfaces/"
+												  "${PROJECT_BINARY_DIR}/structs/"
 												  "external/glfw/include"
 												  "external/glm/"
 												  "${Vulkan_INCLUDE_DIRS}")

@@ -4,6 +4,9 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE //force GLM to use vulkan's perspective projection matrix range of 0.0 to 1.0
 
 #include "VertexColor.h"
+#include "Vertex.h"
+#include "VulkanObject.h"
+
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -31,96 +34,21 @@ class HelloSquareApplication
 
 public:
 
-    HelloSquareApplication();
+    HelloSquareApplication(std::vector<VulkanObject>* objectList);
     void run();
 
 private:
     std::chrono::steady_clock::time_point lastColorUpdateTime; //the time when the colors were last updated
     std::vector<VertexColor> vertexColors; 
+    std::vector<VulkanObject>* objectList; 
+
+#pragma region DebugVars
+    size_t numVerticies = 0; 
+    size_t numIndicies = 0; 
+#pragma endregion
 
     /* Runtime Vars */
     static bool spin; 
-
-    struct Vertex {
-        glm::vec3 pos;
-
-        /// <summary>
-        /// Generates VkVertexInputBindingDescription from vertex object. This describes at which rate to load data from memory throughout the verticies. 
-        /// Such as: number of bytes between data entries or if should move the next data entry after each vertex or after each instance
-        /// </summary>
-        /// <returns></returns>
-        static VkVertexInputBindingDescription getBindingDescription() {
-            VkVertexInputBindingDescription bindingDescription{};
-
-            //all vertex data is in one array, so only using one binding 
-            bindingDescription.binding = 0; //specifies index of the binding in the array of bindings
-
-            //number of bytes from one entry to the next
-            bindingDescription.stride = sizeof(Vertex);
-
-            //can have one of the following: 
-                //1. VK_VERTEX_INPUT_RATE_VERTEX: move to the next data entry after each vertex
-                //2. VK_VERTEX_INPUT_RATE_INSTANCE: move to the next data entry after each instance
-            //not using instanced rendering so per-vertex data
-            bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-            return bindingDescription;
-        }
-
-        /// <summary>
-        /// Generates attribute data for the verticies. VkVertexInputAttributeDescriptions describes to vulkan how to extract a vertex attribute froma chunk of 
-        /// vertex data originating from a binding descritpion. For this program, there are 2: position and color. 
-        /// </summary>
-        /// <returns>Array containing attribute descriptions</returns>
-        static std::array<VkVertexInputAttributeDescription, 1> getAttributeDescriptions() {
-            std::array<VkVertexInputAttributeDescription, 1> attributeDescriptions{};
-
-            /* Struct */
-                //1. binding - which binding the per-vertex data comes in 
-                //2. location - references the location directive of the input in the vertex shader 
-                //3. format - describes type of data 
-                    // common shader and formats used 
-                    // float : VK_FORMAT_R32_SFLOAT 
-                    // vec2  : VK_FORMAT_R32G32_SFLOAT
-                    // vec3  : VK_FORMAT_R32G32B32_SFLOAT
-                    // vec4  : VK_FORMAT_R32G32B32A32_SFLOAT
-                        //more odd examples
-                            // ivec2 : VK_FORMAT_R32G32_SINT -- 2 component vector of 32-bit signed integers
-                            // uvec4 : VK_FORMAT_R32G32B32A32_UINT -- 4 component vector of 32-bit unsigned integers 
-                            // double: VK_FORMAT_R64_SFLOAT -- double precision 64-bit float 
-                //4. offset - specifies the number of bytes since the start of the per-vertex data to read from
-            attributeDescriptions[0].binding = 0;
-            attributeDescriptions[0].location = 0;
-            attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-
-            //the binding is loading over vertex at a time and the position attribute is at an offset of 0 bytes from the beginning of the struct.
-            //offset macro calculates this distance for us
-            attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-            return attributeDescriptions;
-        }
-    };
-
-    //both vertex and vert attribute data is contained in one array of verticies == 'interleaving vertex' attributes
-    
-    const std::vector<Vertex> vertices = {
-        {{-0.5f, -0.5f, 0.5f}},
-        {{0.5f, -0.5f, 0.5f}},
-        {{0.5f, 0.5f, 0.5f}},
-        {{-0.5f, 0.5f, 0.5f}},
-        {{-0.5f, -0.5f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}},
-        {{-0.5f, 0.5f, 0.0f}}
-    };
-
-    const std::vector<uint16_t> indicies = { 0, 1, 2, 2, 3, 0,
-                                        0, 3, 7, 7, 4, 0, 
-                                        1, 0, 4, 4, 5, 1, 
-                                        2, 1, 5, 5, 6, 2, 
-                                        3, 2, 6, 6, 7, 3, 
-                                        4, 5, 6, 6, 7, 4 };
-    //const std::vector<uint16_t> indicies = { 0, 1, 2, 2, 3, 0, 0, 4, 7, 7, 3, 0 };
 
     /*Note regarding memory alignment: (N = 4 bytes)
     * Scalars have to be aligned by N

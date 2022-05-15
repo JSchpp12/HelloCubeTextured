@@ -16,12 +16,10 @@ void HelloSquareApplication::key_callback(GLFWwindow* window, int key, int scanc
 void HelloSquareApplication::mainLoop() {
     int frameCount = 0;
 
+
     auto start = Clock::now();
     lastColorUpdateTime = std::chrono::high_resolution_clock::now(); 
-    vertexColors.resize(vertices.size());
-
-    int counter = 0; 
-    glm::vec3 newColor{ 0.0f, 0.0f, 0.0f }; 
+    vertexColors.resize(numVerticies);
     std::cout << "The number of frames drawn in the last second will be displayed below" << std::endl; 
 
     while (!glfwWindowShouldClose(window)) {
@@ -214,9 +212,17 @@ void HelloSquareApplication::cleanupSwapChain() {
     vkDestroyDescriptorPool(device, descriptorPool, nullptr); 
 }
 
-HelloSquareApplication::HelloSquareApplication()
+HelloSquareApplication::HelloSquareApplication(std::vector<VulkanObject>* objectList):
+    objectList(objectList)
 {
+    //generate any variables needed for debug
+    //specifically those that take longer to generate 
 
+    //number of verticies in the objectList 
+    for (size_t i = 0; i < this->objectList->size(); i++) {
+        this->numVerticies += this->objectList->at(i).GetVerticies().size();
+        this->numIndicies += this->objectList->at(i).GetIndicies().size(); 
+    }
 }
 
 void HelloSquareApplication::run() {
@@ -1443,11 +1449,11 @@ void HelloSquareApplication::createCommandBuffers() {
             //3. instanceCount: used for instanced render, use 1 otherwise
             //4. firstVertex: offset in VBO, defines lowest value of gl_VertexIndex
             //5. firstInstance: offset for instanced rendering, defines lowest value of gl_InstanceIndex -> not using so leave at 1 
-        //vkCmdDrawIndexed(graphicsCommandBuffers[i], static_cast<uint32_t>(indicies.size()),1, 0, 0, 1); 
-        vkCmdDrawIndexed(graphicsCommandBuffers[i], static_cast<uint32_t>(indicies.size()), 1, 0, 0, 0);
+        //TODO: currently drawing ALL verticies...might need to make more flexible with more objects
+        vkCmdDrawIndexed(graphicsCommandBuffers[i], static_cast<uint32_t>(numIndicies), 1, 0, 0, 0);
         //vkCmdDrawIndexed(graphicsCommandBuffers[i], 3, 1, 0, 0, 0); 
 
-        //can now finis render pass
+        //can now finish render pass
         vkCmdEndRenderPass(graphicsCommandBuffers[i]);
 
         //record command buffer
@@ -1509,12 +1515,21 @@ void HelloSquareApplication::createFenceImageTracking() {
     //initially, no frame is using any image so this is going to be created without an explicit link
 }
 
-void HelloSquareApplication::createVertexBuffer() {
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
+void HelloSquareApplication::createVertexBuffer() { 
+    VulkanObject* currentObject = nullptr; 
+    VkDeviceSize bufferSize;
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
+
+    //TODO: ensure that more objects can be drawn 
+
+    //go through all objects in object list and generate the vertex indicies -- only works with 1 object at the moment 
+    currentObject = &this->objectList->at(0); 
+    auto verticies = currentObject->GetVerticies(); 
+    bufferSize = sizeof(verticies[0]) * verticies.size();
+
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
 
     /* Filling the vertex buffer */
     void* data;
@@ -1523,13 +1538,13 @@ void HelloSquareApplication::createVertexBuffer() {
     //can also specify VK_WHOLE_SIZE to map all memory 
     //currrently no memory flags available in API (time of writing) so must be set to 0
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices.data(), (size_t)bufferSize); //simply copy data into mapped memory
+    memcpy(data, verticies.data(), (size_t)bufferSize); //simply copy data into mapped memory
     vkUnmapMemory(device, stagingBufferMemory); //unmap memory
 
     /* Staging Buffer */
     //New flags 
-        //VK_BUFFER_USAGE_TRANSFER_SRC_BIT: buffer can be used as source in a memory transfer 
-        //VK_BUFFER_USAGE_TRANSFER_DST_BIT: buffer can be used as destination in a memory transfer 
+    //VK_BUFFER_USAGE_TRANSFER_SRC_BIT: buffer can be used as source in a memory transfer 
+    //VK_BUFFER_USAGE_TRANSFER_DST_BIT: buffer can be used as destination in a memory transfer 
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
     copyBuffer(stagingBuffer, vertexBuffer, bufferSize); //actually call to copy memory
@@ -1551,25 +1566,31 @@ void HelloSquareApplication::createVertexBuffer() {
 
 void HelloSquareApplication::createIndexBuffer()
 {
-    VkDeviceSize bufferSize = sizeof(indicies[0]) * indicies.size(); 
+    VkDeviceSize bufferSize; 
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
 
-    VkBuffer stagingBuffer; 
-    VkDeviceMemory stagingBufferMemory; 
+    //TODO: will only support one object at the moment
 
+    VulkanObject* currObject = &objectList->at(0); 
+    std::vector<uint16_t> indicies = currObject->GetIndicies(); 
+
+    bufferSize = sizeof(indicies[0]) * indicies.size();
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
-    void* data; 
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data); 
-    memcpy(data, indicies.data(), (size_t)bufferSize); 
-    vkUnmapMemory(device, stagingBufferMemory); 
+    void* data;
+    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, indicies.data(), (size_t)bufferSize);
+    vkUnmapMemory(device, stagingBufferMemory);
 
     //note the use of VK_BUFFER_USAGE_INDEX_BUFFER_BIT due to the use of the indicies
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory); 
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
 
-    copyBuffer(stagingBuffer, indexBuffer, bufferSize); 
+    copyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
-    vkDestroyBuffer(device, stagingBuffer, nullptr); 
-    vkFreeMemory(device, stagingBufferMemory, nullptr); 
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+
 }
 
 void HelloSquareApplication::createRenderingBuffers()
