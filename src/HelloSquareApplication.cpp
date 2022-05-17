@@ -156,6 +156,7 @@ void HelloSquareApplication::drawFrame() {
 void HelloSquareApplication::cleanup() {
     cleanupSwapChain();
 
+    vkDestroySampler(device, textureSampler, nullptr); 
     vkDestroyImageView(device, textureImageView, nullptr); 
     vkDestroyImage(device, textureImage, nullptr); 
     vkFreeMemory(device, textureImageMemory, nullptr); 
@@ -251,6 +252,7 @@ void HelloSquareApplication::initVulkan() {
     createCommandPools();
     createTextureImage(); 
     createTextureImageView(); 
+    createTextureSampler(); 
     createVertexBuffer();
     createIndexBuffer(); 
     createRenderingBuffers(); 
@@ -549,7 +551,11 @@ bool HelloSquareApplication::isDeviceSuitable(VkPhysicalDevice device) {
         SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
-    return indicies.isComplete() && extensionsSupported && swapChainAdequate;
+
+    VkPhysicalDeviceFeatures supportedFeatures;
+    vkGetPhysicalDeviceFeatures(device, &supportedFeatures); 
+
+    return indicies.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy; 
 }
 
 bool HelloSquareApplication::checkDeviceExtensionSupport(VkPhysicalDevice device) {
@@ -624,6 +630,7 @@ void HelloSquareApplication::createLogicalDevice() {
 
     //specifying device features that we want to use -- can pull any of the device features that was queried before...for now use nothing
     VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE; 
 
     //Create actual logical device
     VkDeviceCreateInfo createInfo{};
@@ -1256,6 +1263,53 @@ void HelloSquareApplication::createTextureImage()
     vkFreeMemory(device, stagingBufferMemory, nullptr); 
 }
 
+void HelloSquareApplication::createTextureImageView()
+{
+    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+}
+
+void HelloSquareApplication::createTextureSampler()
+{
+    //get device properties for amount of anisotropy permitted
+    VkPhysicalDeviceProperties deviceProperties{};
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+
+    VkSamplerCreateInfo samplerInfo{}; 
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO; 
+    samplerInfo.magFilter = VK_FILTER_LINEAR;                       //how to sample textures that are magnified 
+    samplerInfo.minFilter = VK_FILTER_LINEAR;                       //how to sample textures that are minified
+    
+    
+    //repeat mode - repeat the texture when going beyond the image dimensions
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT; 
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+    //should anisotropic filtering be used? Really only matters if performance is a concern
+    samplerInfo.anisotropyEnable = VK_TRUE; 
+    //specifies the limit on the number of texel samples that can be used (lower = better performance)
+    samplerInfo.maxAnisotropy = deviceProperties.limits.maxSamplerAnisotropy; 
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK; 
+    //specifies coordinate system to use in addressing texels. 
+        //VK_TRUE - use coordinates [0, texWidth) and [0, texHeight]
+        //VK_FALSE - use [0, 1)
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+
+    //if comparing, the texels will first compare to a value, the result of the comparison is used in filtering operations (percentage-closer filtering on shadow maps)
+    samplerInfo.compareEnable = VK_FALSE; 
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+    //following apply to mipmapping -- not using here
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; 
+    samplerInfo.mipLodBias = 0.0f; 
+    samplerInfo.minLod = 0.0f; 
+    samplerInfo.maxLod = 0.0f; 
+
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!"); 
+    }
+}
+
 void HelloSquareApplication::createDepthResources()
 {
     //depth image should have:
@@ -1560,11 +1614,6 @@ void HelloSquareApplication::createFenceImageTracking() {
     imagesInFlight.resize(swapChainImages.size(), VK_NULL_HANDLE);
 
     //initially, no frame is using any image so this is going to be created without an explicit link
-}
-
-void HelloSquareApplication::createTextureImageView()
-{
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT); 
 }
 
 void HelloSquareApplication::createVertexBuffer() { 
