@@ -4,6 +4,8 @@ typedef std::chrono::high_resolution_clock Clock;
 
 bool HelloSquareApplication::spin = true; 
 bool HelloSquareApplication::useGeneratedColors = true; 
+bool HelloSquareApplication::useVertexColors = false; 
+bool HelloSquareApplication::useTextures = false; 
 
 void HelloSquareApplication::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -13,8 +15,20 @@ void HelloSquareApplication::key_callback(GLFWwindow* window, int key, int scanc
                 spin = spin ? false : true;
                 break; 
             case GLFW_KEY_1: 
-                useGeneratedColors = useGeneratedColors ? false : true; 
+                useVertexColors = true;
+                useGeneratedColors = false;
+                useTextures = false;
                 break; 
+            case GLFW_KEY_2: 
+                useVertexColors = false;
+                useGeneratedColors = true; 
+                useTextures = false;
+                break; 
+            case GLFW_KEY_3: 
+                useVertexColors = false;
+                useGeneratedColors = false;
+                useTextures = true;
+                break;
         }
     }
 }
@@ -1858,17 +1872,20 @@ void HelloSquareApplication::updateUniformBuffer(uint32_t currentImage)
     for (size_t i = 0; i < vertexColors.size(); i++) {
         vertexColors[i].UpdateColor(0.0001f); 
     }
-
+    
+    //update color controls
     ubo.useGeneratedColor = useGeneratedColors; 
+    ubo.useVertexColors = useVertexColors;
+    ubo.useTextures = useTextures; 
 
     ubo.color1 = vertexColors[0].GetVertexColor(); 
     ubo.color2 = vertexColors[1].GetVertexColor();
     ubo.color3 = vertexColors[2].GetVertexColor();
     ubo.color4 = vertexColors[3].GetVertexColor();
-    //ubo.color5 = vertexColors[4].GetVertexColor();
-    //ubo.color6 = vertexColors[5].GetVertexColor();
-    //ubo.color7 = vertexColors[6].GetVertexColor();
-    //ubo.color8 = vertexColors[7].GetVertexColor();
+    ubo.color5 = vertexColors[4].GetVertexColor();
+    ubo.color6 = vertexColors[5].GetVertexColor();
+    ubo.color7 = vertexColors[6].GetVertexColor();
+    ubo.color8 = vertexColors[7].GetVertexColor();
 
     //copy data to the current uniform buffer 
     void* data; 

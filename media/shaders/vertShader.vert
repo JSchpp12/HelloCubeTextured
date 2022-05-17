@@ -6,6 +6,8 @@ layout(binding = 0) uniform UniformBufferObject {
 	mat4 view; 
 	mat4 proj; 
 	bool useGeneratedColor;		//should the vertex color be set from the colors passed through the UBO
+	bool useVertexColors;
+	bool useTextures; 
 	vec3 color1; 
 	vec3 color2; 
 	vec3 color3; 
