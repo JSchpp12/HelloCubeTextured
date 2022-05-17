@@ -3,12 +3,18 @@
 typedef std::chrono::high_resolution_clock Clock;
 
 bool HelloSquareApplication::spin = true; 
+bool HelloSquareApplication::useGeneratedColors = true; 
 
 void HelloSquareApplication::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (action == GLFW_PRESS) {
-        if (key == GLFW_KEY_0) {
-            spin = spin ? false : true;
+        switch (key) {
+            case GLFW_KEY_0:
+                spin = spin ? false : true;
+                break; 
+            case GLFW_KEY_1: 
+                useGeneratedColors = useGeneratedColors ? false : true; 
+                break; 
         }
     }
 }
@@ -817,7 +823,7 @@ void HelloSquareApplication::createDescriptorSetLayout()
     setLayoutBindings.descriptorCount = 1;                                   //can pass an array of uniform buffer objects, for this we are only using one 
 
     //which shader stages are going to use the descriptor 
-    setLayoutBindings.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    setLayoutBindings.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     //only needed for image sampling related descriptors -- not used now
     setLayoutBindings.pImmutableSamplers = nullptr;
@@ -1852,6 +1858,8 @@ void HelloSquareApplication::updateUniformBuffer(uint32_t currentImage)
     for (size_t i = 0; i < vertexColors.size(); i++) {
         vertexColors[i].UpdateColor(0.0001f); 
     }
+
+    ubo.useGeneratedColor = useGeneratedColors; 
 
     ubo.color1 = vertexColors[0].GetVertexColor(); 
     ubo.color2 = vertexColors[1].GetVertexColor();

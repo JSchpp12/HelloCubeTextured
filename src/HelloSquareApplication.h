@@ -48,6 +48,7 @@ private:
 
     /* Runtime Vars */
     static bool spin; 
+    static bool useGeneratedColors; 
 
     /*Note regarding memory alignment: (N = 4 bytes)
     * Scalars have to be aligned by N
@@ -60,6 +61,7 @@ private:
         alignas(16) glm::mat4 model; 
         alignas(16) glm::mat4 view; 
         alignas(16) glm::mat4 proj; 
+        alignas(4) bool useGeneratedColor; 
         alignas(16) glm::vec3 color1; 
         alignas(16) glm::vec3 color2; 
         alignas(16) glm::vec3 color3; 

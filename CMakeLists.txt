@@ -34,6 +34,7 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
 )
 
 foreach(GLSL ${GLSL_SOURCE_FILES})
+  message("Building")
   get_filename_component(FILE_NAME ${GLSL} NAME)
   set(SPIRV "${PROJECT_BINARY_DIR}/media/shaders/${FILE_NAME}.spv")
   add_custom_command(
