@@ -822,11 +822,19 @@ void HelloSquareApplication::createDescriptorSetLayout()
     //only needed for image sampling related descriptors -- not used now
     setLayoutBindings.pImmutableSamplers = nullptr;
 
+    //binding for combined image sampler descriptor
+    VkDescriptorSetLayoutBinding samplerLayoutBinding{}; 
+    samplerLayoutBinding.binding = 1; 
+    samplerLayoutBinding.descriptorCount = 1; 
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; 
+    samplerLayoutBinding.pImmutableSamplers = nullptr; 
+    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;                     //use in the fragment shader
 
+    std::array<VkDescriptorSetLayoutBinding, 2> bindings = { setLayoutBindings, samplerLayoutBinding }; 
     VkDescriptorSetLayoutCreateInfo layoutInfo{}; 
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &setLayoutBindings;
+    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size()); 
+    layoutInfo.pBindings = bindings.data(); 
 
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!"); 
@@ -1849,10 +1857,10 @@ void HelloSquareApplication::updateUniformBuffer(uint32_t currentImage)
     ubo.color2 = vertexColors[1].GetVertexColor();
     ubo.color3 = vertexColors[2].GetVertexColor();
     ubo.color4 = vertexColors[3].GetVertexColor();
-    ubo.color5 = vertexColors[4].GetVertexColor();
-    ubo.color6 = vertexColors[5].GetVertexColor();
-    ubo.color7 = vertexColors[6].GetVertexColor();
-    ubo.color8 = vertexColors[7].GetVertexColor();
+    //ubo.color5 = vertexColors[4].GetVertexColor();
+    //ubo.color6 = vertexColors[5].GetVertexColor();
+    //ubo.color7 = vertexColors[6].GetVertexColor();
+    //ubo.color8 = vertexColors[7].GetVertexColor();
 
     //copy data to the current uniform buffer 
     void* data; 
@@ -1867,14 +1875,19 @@ void HelloSquareApplication::createDescriptorPool()
     //descriptor sets cant be created directly, they must be allocated from a pool like command buffers. 
     VkDescriptorPoolSize descriptorPoolSize{};
 
+    std::array<VkDescriptorPoolSize, 2> poolSizes{}; 
+
     /* Uniform Buffers : 1 for scene and 1 per object */
-    descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorPoolSize.descriptorCount = static_cast<uint32_t>(swapChainImages.size());     //allocate a descriptor for each frame
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());     //allocate a descriptor for each frame
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; 
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
 
     VkDescriptorPoolCreateInfo poolInfo{}; 
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO; 
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &descriptorPoolSize;
+    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    poolInfo.pPoolSizes = poolSizes.data();
+    poolInfo.maxSets = static_cast<uint32_t>(swapChainImages.size()); 
 
     //must also define max number of descriptor sets that are available 
     poolInfo.maxSets = static_cast<uint32_t>(swapChainImages.size()); 
@@ -1913,37 +1926,38 @@ void HelloSquareApplication::createDescriptorSets()
         uboBufferInfo.offset = 0;
         uboBufferInfo.range = sizeof(UniformBufferObject);
 
-        //construct VkWriteDescriptorSet to be passed to vkUpdateDescriptorSets
-        VkWriteDescriptorSet writeDescriptorSets{};
-        //std::array<VkWriteDescriptorSet, 2> writeDescriptorSets{}; 
-        /* Binding 0: Uniform Buffer */
-        writeDescriptorSets.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSets.dstSet = descriptorSets[i]; //which descriptor set to update 
-        writeDescriptorSets.dstBinding = 0;             //which binding to update - the UBO was previously given an index of 0
-        writeDescriptorSets.dstArrayElement = 0;        //descriptors can be arrays, specifiy first index of array to update - not using array here 
+        //create pool for texture and texture sampler
+        VkDescriptorImageInfo imageInfo{}; 
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; 
+        imageInfo.imageView = textureImageView; 
+        imageInfo.sampler = textureSampler; 
 
-        writeDescriptorSets.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        writeDescriptorSets.descriptorCount = 1; //possible to update more than one descriptor in an array, starting at index dstArrayElement
+        std::array<VkWriteDescriptorSet, 2> writeDescriptorSets{}; 
+        /* Binding 0: Uniform Buffer */
+        writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDescriptorSets[0].dstSet = descriptorSets[i];      //which descriptor set to update 
+        writeDescriptorSets[0].dstBinding = 0;                  //which binding to update - the UBO was previously given an index of 0
+        writeDescriptorSets[0].dstArrayElement = 0;             //descriptors can be arrays, specifiy first index of array to update - not using array here 
+
+        writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        writeDescriptorSets[0].descriptorCount = 1;             //possible to update more than one descriptor in an array, starting at index dstArrayElement
         
         //reference array with descriptorCount and actually configures the descriptor. Depends on the type of descriptor which should be used. 
-        writeDescriptorSets.pBufferInfo = &uboBufferInfo;  //used for descriptors that refer to buffer data 
-        writeDescriptorSets.pImageInfo = nullptr;       //used for descriptors that refer to image data 
-        writeDescriptorSets.pTexelBufferView = nullptr; //used for descriptors that refer to buffer views
+        writeDescriptorSets[0].pBufferInfo = &uboBufferInfo;    //used for descriptors that refer to buffer data 
+        writeDescriptorSets[0].pImageInfo = nullptr;            //used for descriptors that refer to image data 
+        writeDescriptorSets[0].pTexelBufferView = nullptr;      //used for descriptors that refer to buffer views
         
-        /* Binding 1: Verticies attributes */
-        //writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        //writeDescriptorSets[1].dstSet = descriptorSets[i];
-        //writeDescriptorSets[1].dstBinding = 1;
-        //writeDescriptorSets[1].dstArrayElement = 0;
-
-        //writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        //writeDescriptorSets[1].descriptorCount = vertices.size();
-        //writeDescriptorSets[1].pBufferInfo = &vaBufferInfo;
-        //writeDescriptorSets[1].pImageInfo = nullptr;
-        //writeDescriptorSets[1].pTexelBufferView = nullptr;
+        /* Binding 1: Texture Attributes */
+        writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; 
+        writeDescriptorSets[1].dstSet = descriptorSets[0]; 
+        writeDescriptorSets[1].dstBinding = 1; 
+        writeDescriptorSets[1].dstArrayElement = 0; 
+        writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; 
+        writeDescriptorSets[1].descriptorCount = 1; 
+        writeDescriptorSets[1].pImageInfo = &imageInfo;         //ref to image that will be allocated to this pool
 
         //make actual call to vulkan to update the descriptor sets
-        vkUpdateDescriptorSets(device, 1, &writeDescriptorSets, 0, nullptr); //can also take a vkCopyDescriptorSet -> can be used to copy descriptors to each other
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr); //can also take a vkCopyDescriptorSet -> can be used to copy descriptors to each other
     }
 
     /*NOTE: descriptor sets do not need to be explicitly destroyed since they will be cleaned when the descriptor pool is destroyed*/

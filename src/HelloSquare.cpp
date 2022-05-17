@@ -15,28 +15,27 @@ int main() {
 
     //populate object list 
     {
-
         //both vertex and vert attribute data is contained in one array of verticies == 'interleaving vertex' attributes
         //conatiner for storing new objects when loading
         std::unique_ptr<std::vector<Vertex>> newVerticies(new std::vector<Vertex>{
-            {{-0.5f, -0.5f, 0.5f}},
-            {{0.5f, -0.5f, 0.5f}},
-            {{0.5f, 0.5f, 0.5f}},
-            {{-0.5f, 0.5f, 0.5f}},
-            {{-0.5f, -0.5f, 0.0f}},
-            {{0.5f, -0.5f, 0.0f}},
-            {{0.5f, 0.5f, 0.0f}},
-            {{-0.5f, 0.5f, 0.0f}}
+            {{-0.5f, -0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+            {{0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+            {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+            {{-0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+            //{{{-0.5f, -0.5f, 0.0f}}, {}, {} },
+            //{{{0.5f, -0.5f, 0.0f}}, {}, {}},
+            //{{{0.5f, 0.5f, 0.0f}}, {}, {}},
+            //{{{-0.5f, 0.5f, 0.0f}}, {}, {}}
         });
 
         std::unique_ptr<std::vector<uint16_t>> newIndicies(new std::vector<uint16_t>{
-            //0, 1, 2, 2, 3, 0
-            0, 1, 2, 2, 3, 0,
-            0, 3, 7, 7, 4, 0,
-            1, 0, 4, 4, 5, 1,
-            2, 1, 5, 5, 6, 2,
-            3, 2, 6, 6, 7, 3,
-            4, 5, 6, 6, 7, 4
+            0, 1, 2, 2, 3, 0
+            //0, 1, 2, 2, 3, 0,
+            //0, 3, 7, 7, 4, 0,
+            //1, 0, 4, 4, 5, 1,
+            //2, 1, 5, 5, 6, 2,
+            //3, 2, 6, 6, 7, 3,
+            //4, 5, 6, 6, 7, 4
         });
 
         VulkanObject newObject = VulkanObject(newVerticies.get(), newIndicies.get());

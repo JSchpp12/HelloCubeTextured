@@ -13,6 +13,8 @@
 //both vertex and vert attribute data is contained in one array of verticies == 'interleaving vertex' attributes
 struct Vertex {
     glm::vec3 pos;
+    glm::vec3 color; 
+    glm::vec2 texCoord; 
 
     /// <summary>
     /// Generates VkVertexInputBindingDescription from vertex object. This describes at which rate to load data from memory throughout the verticies. 
@@ -42,8 +44,8 @@ struct Vertex {
     /// vertex data originating from a binding descritpion. For this program, there are 2: position and color. 
     /// </summary>
     /// <returns>Array containing attribute descriptions</returns>
-    static std::array<VkVertexInputAttributeDescription, 1> getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 1> attributeDescriptions{};
+    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
+        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
         /* Struct */
             //1. binding - which binding the per-vertex data comes in 
@@ -66,6 +68,17 @@ struct Vertex {
         //the binding is loading over vertex at a time and the position attribute is at an offset of 0 bytes from the beginning of the struct.
         //offset macro calculates this distance for us
         attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+        attributeDescriptions[1].binding = 0; 
+        attributeDescriptions[1].location = 1; 
+        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; 
+        attributeDescriptions[1].offset = offsetof(Vertex, color); 
+
+        /*Binding for vertex texture coordinates*/
+        attributeDescriptions[2].binding = 0; 
+        attributeDescriptions[2].location = 2; 
+        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT; 
+        attributeDescriptions[2].offset = offsetof(Vertex, texCoord); 
 
         return attributeDescriptions;
     }
