@@ -1957,7 +1957,7 @@ void HelloSquareApplication::createDescriptorSets()
         
         /* Binding 1: Texture Attributes */
         writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; 
-        writeDescriptorSets[1].dstSet = descriptorSets[0]; 
+        writeDescriptorSets[1].dstSet = descriptorSets[i]; 
         writeDescriptorSets[1].dstBinding = 1; 
         writeDescriptorSets[1].dstArrayElement = 0; 
         writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; 

@@ -16,7 +16,7 @@ layout(binding = 0) uniform UniformBufferObject {
 	vec3 color8; 
 } ubo; 
 
-//layout(binding = 1) uniform sampler2D texSampler; 
+layout(binding = 1) uniform sampler2D texSampler; 
 
 //output variables have to be specifically defined 
 //the location value specifies the index of the framebuffer that the variable is for
@@ -29,6 +29,7 @@ void main() {
 	if (ubo.useGeneratedColor){
 		outColor = vec4(fragColor, 1.0f); 
 	}else{
-		outColor = vec4(fragTexCoord, 0.0, 1.0f); 
+		outColor = texture(texSampler, fragTexCoord); 
+//		outColor = vec4(fragTexCoord, 0.0, 1.0f); 
 	}
 }
