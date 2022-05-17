@@ -156,6 +156,9 @@ void HelloSquareApplication::drawFrame() {
 void HelloSquareApplication::cleanup() {
     cleanupSwapChain();
 
+    vkDestroyImage(device, textureImage, nullptr); 
+    vkFreeMemory(device, textureImageMemory, nullptr); 
+
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
     vkDestroyBuffer(device, indexBuffer, nullptr);
@@ -245,6 +248,7 @@ void HelloSquareApplication::initVulkan() {
     createDepthResources();
     createFramebuffers();
     createCommandPools();
+    createTextureImage(); 
     createVertexBuffer();
     createIndexBuffer(); 
     createRenderingBuffers(); 
@@ -835,8 +839,8 @@ VkShaderModule HelloSquareApplication::createShaderModule(const std::vector<char
 }
 
 void HelloSquareApplication::createGraphicsPipeline() {
-    auto fragShaderCode = readFile("shaders/fragShader.frag.spv");
-    auto vertShaderCode = readFile("shaders/vertShader.vert.spv");
+    auto fragShaderCode = readFile("media/shaders/fragShader.frag.spv");
+    auto vertShaderCode = readFile("media/shaders/vertShader.vert.spv");
     
 
     auto bindingDescriptions = Vertex::getBindingDescription();
@@ -1207,6 +1211,47 @@ void HelloSquareApplication::createCommandPools() {
     //temporary command pool --unused at this time
     //createPool(queueFamilyIndicies.graphicsFamily.value(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, tempCommandPool); 
 
+}
+
+void HelloSquareApplication::createTextureImage()
+{
+    int texWidth, texHeight, texChannels; 
+
+    stbi_uc* pixels = stbi_load("media/images/texture.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha); 
+    VkDeviceSize imageSize = texWidth * texHeight * 4; 
+
+    if (!pixels) {
+        throw std::runtime_error("Failed to load texture image!"); 
+    }
+
+    /* Create Staging Buffer */
+    VkBuffer stagingBuffer; 
+    VkDeviceMemory stagingBufferMemory; 
+
+    //buffer needs to be in host visible memory
+    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory); 
+
+    //copy over to staging buffer
+    void* data; 
+    vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data); 
+    memcpy(data, pixels, static_cast<size_t>(imageSize)); 
+    vkUnmapMemory(device, stagingBufferMemory); 
+
+    //free up image in stbi 
+    stbi_image_free(pixels); 
+
+    createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory); 
+
+    //copy staging buffer to texture image 
+    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)); 
+
+    //prepare final image for texture mapping in shaders 
+    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); 
+
+    vkDestroyBuffer(device, stagingBuffer, nullptr); 
+    vkFreeMemory(device, stagingBufferMemory, nullptr); 
 }
 
 void HelloSquareApplication::createDepthResources()
@@ -1646,48 +1691,56 @@ void HelloSquareApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags 
 
 void HelloSquareApplication::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
-    //allocate using temporary command pool
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = transferCommandPool;
-    allocInfo.commandBufferCount = 1;
-
-    VkCommandBuffer transferBuffer;
-    vkAllocateCommandBuffers(device, &allocInfo, &transferBuffer);
-
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; //only planning on using this command buffer once 
-
-    vkBeginCommandBuffer(transferBuffer, &beginInfo);
+    bool useTransferPool = true; 
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands(useTransferPool);
 
     VkBufferCopy copyRegion{};
     copyRegion.srcOffset = 0;
     copyRegion.dstOffset = 0;
     copyRegion.size = size;
+
     //note: cannot specify VK_WHOLE_SIZE as before 
-    vkCmdCopyBuffer(transferBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-    vkEndCommandBuffer(transferBuffer);
+    endSingleTimeCommands(commandBuffer, useTransferPool);
+}
 
-    //Execute command buffer
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &transferBuffer;
+void HelloSquareApplication::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+{
+    bool useTransferPool = true; 
 
-    vkQueueSubmit(transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands(useTransferPool);
 
-    /*Note about waiting for complete*/
-    /*Can be done two ways
-    *   1. Fences --more optimized and let you do multiple transfers at once
-    *   2. Wait for buffer to become idle
-    */
-    vkQueueWaitIdle(transferQueue);
+    //specify which region of the buffer will be copied to the image 
+    VkBufferImageCopy region{}; 
+    region.bufferOffset = 0;                                            //specifies byte offset in the buffer at which the pixel values start
+    //the following specify the layout of pixel information in memory
+    region.bufferRowLength = 0; 
+    region.bufferImageHeight = 0; 
 
-    //cleanup 
-    vkFreeCommandBuffers(device, transferCommandPool, 1, &transferBuffer);
+    //the following indicate what part of the image we want to copy to 
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; 
+    region.imageSubresource.mipLevel = 0; 
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1; 
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = {
+        width,
+        height,
+        1
+    };
+
+    //enque copy operation 
+    vkCmdCopyBufferToImage(
+        commandBuffer,
+        buffer,
+        image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   //assuming image is already in optimal format for copy operations
+        1,
+        &region
+    ); 
+
+    endSingleTimeCommands(commandBuffer, useTransferPool); 
 }
 
 void HelloSquareApplication::updateUniformBuffer(uint32_t currentImage)
@@ -1838,6 +1891,115 @@ void HelloSquareApplication::createDescriptorSets()
     }
 
     /*NOTE: descriptor sets do not need to be explicitly destroyed since they will be cleaned when the descriptor pool is destroyed*/
+}
+
+void HelloSquareApplication::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands(); 
+
+    //create a barrier to prevent pipeline from moving forward until image transition is complete
+    VkImageMemoryBarrier barrier{}; 
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;     //specific flag for image operations
+    barrier.oldLayout = oldLayout; 
+    barrier.newLayout = newLayout; 
+
+    //if barrier is used for transferring ownership between queue families, this would be important -- set to ignore since we are not doing this
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; 
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+    barrier.image = image; 
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; 
+    barrier.subresourceRange.baseMipLevel = 0;                          //image does not have any mipmap levels
+    barrier.subresourceRange.levelCount = 1;                            //image is not an array
+    barrier.subresourceRange.baseArrayLayer = 0; 
+    barrier.subresourceRange.layerCount = 1;
+
+    //the operations that need to be completed before and after the barrier, need to be defined
+    barrier.srcAccessMask = 0; //TODO
+    barrier.dstAccessMask = 0; //TODO
+
+    VkPipelineStageFlags sourceStage, destinationStage; 
+
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        //undefined transition state, dont need to wait for this to complete
+        barrier.srcAccessMask = 0; 
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; 
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; 
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT; 
+    }
+    else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        //transfer destination shdaer reading, will need to wait for completion. Especially in the frag shader where reads will happen
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; 
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT; 
+
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT; 
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; 
+    }
+    else {
+        throw std::invalid_argument("unsupported layout transition!"); 
+    }
+
+    //transfer writes must occurr during the pipeline transfer stage
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        sourceStage,                    //which pipeline stages should occurr before barrier 
+        destinationStage,               //pipeline stage in which operations iwll wait on the barrier 
+        0,                  
+        0, 
+        nullptr,
+        0, 
+        nullptr,
+        1, 
+        &barrier
+    ); 
+
+
+    endSingleTimeCommands(commandBuffer); 
+}
+
+VkCommandBuffer HelloSquareApplication::beginSingleTimeCommands(bool useTransferPool)
+{
+    //allocate using temporary command pool
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = useTransferPool ? transferCommandPool : graphicsCommandPool;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer tmpCommandBuffer;
+    vkAllocateCommandBuffers(device, &allocInfo, &tmpCommandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; //only planning on using this command buffer once 
+
+    vkBeginCommandBuffer(tmpCommandBuffer, &beginInfo);
+
+    return tmpCommandBuffer;
+}
+
+void HelloSquareApplication::endSingleTimeCommands(VkCommandBuffer commandBuffer, bool useTransferPool)
+{
+    vkEndCommandBuffer(commandBuffer); 
+
+    //submit the buffer for execution
+    VkSubmitInfo submitInfo{}; 
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO; 
+    submitInfo.commandBufferCount = 1; 
+    submitInfo.pCommandBuffers = &commandBuffer; 
+
+    if (useTransferPool){
+        vkQueueSubmit(transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(transferQueue);
+        vkFreeCommandBuffers(device, transferCommandPool, 1, &commandBuffer);
+    }
+    else {
+        //use graphics pool
+        vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(graphicsQueue);
+        vkFreeCommandBuffers(device, graphicsCommandPool, 1, &commandBuffer);
+    }
 }
 
 

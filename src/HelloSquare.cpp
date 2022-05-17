@@ -3,11 +3,9 @@
 * Based on code from vulkan-tutorial.com -- "Drawing a triangle"
 */
 #include "HelloSquareApplication.h"
-#include "VulkanObject.h"
-#include "Vertex.h"
 
-#include <iostream>
-#include <vector>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 int main() {
     std::unique_ptr<HelloSquareApplication> app; 
@@ -32,6 +30,7 @@ int main() {
         });
 
         std::unique_ptr<std::vector<uint16_t>> newIndicies(new std::vector<uint16_t>{
+            //0, 1, 2, 2, 3, 0
             0, 1, 2, 2, 3, 0,
             0, 3, 7, 7, 4, 0,
             1, 0, 4, 4, 5, 1,

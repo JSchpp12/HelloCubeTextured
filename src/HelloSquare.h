@@ -3,6 +3,8 @@
 
 #pragma once
 
-#include <iostream>
+#include "VulkanObject.h"
+#include "Vertex.h"
 
+#include <vector>
 // TODO: Reference additional headers your program requires here.

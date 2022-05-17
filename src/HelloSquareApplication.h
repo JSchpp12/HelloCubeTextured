@@ -10,6 +10,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <stb_image.h>
 
 #include <iostream>
 #include <fstream>
@@ -22,7 +23,6 @@
 #include <array>
 #include <optional>
 #include <set>
-
 #include <chrono>
 
 const uint32_t WIDTH = 800;
@@ -31,7 +31,6 @@ const uint32_t HEIGHT = 600;
 
 class HelloSquareApplication
 {
-
 public:
 
     HelloSquareApplication(std::vector<VulkanObject>* objectList);
@@ -100,10 +99,13 @@ private:
     //tracker for which frame is being processed of the available permitted frames
     size_t currentFrame = 0;
 
+    //texture information
+    VkImage textureImage; 
+    VkDeviceMemory textureImageMemory; 
+
     //Sync obj storage 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
-    
 
     //vulkan command storage
     VkCommandPool graphicsCommandPool;
@@ -318,10 +320,27 @@ private:
     void createCommandPools();
 
     /// <summary>
+    /// Create an image for use as a texture by vulkan
+    /// </summary>
+    void createTextureImage(); 
+
+    /// <summary>
     /// Create the depth images that will be used by vulkan to run depth tests on fragments. 
     /// </summary>
     void createDepthResources();
 
+
+    /// <summary>
+    /// Create Vulkan Image object with properties provided in function arguments. 
+    /// </summary>
+    /// <param name="width">Width of the image being created</param>
+    /// <param name="height">Height of the image being created</param>
+    /// <param name="format"></param>
+    /// <param name="tiling"></param>
+    /// <param name="usage"></param>
+    /// <param name="properties"></param>
+    /// <param name="image"></param>
+    /// <param name="imageMemory"></param>
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags); 
@@ -399,6 +418,15 @@ private:
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
     /// <summary>
+    /// Copy a buffer to an image.
+    /// </summary>
+    /// <param name="buffer"></param>
+    /// <param name="image"></param>
+    /// <param name="width"></param>
+    /// <param name="height"></param>
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height); 
+
+    /// <summary>
     /// Update the UBO object to prepare information, for the current frame of drawing, which will be used in the shaders.
     /// This will be generating a new transformation matrix in order to cause the object to spin. 
     /// </summary>
@@ -413,6 +441,31 @@ private:
     /// Allocate memory for the descriptor sets. 
     /// </summary>
     void createDescriptorSets(); 
+
+    /// <summary>
+    /// Transition VKimage object from old layout to new layout 
+    /// </summary>
+    /// <param name="image"></param>
+    /// <param name="format"></param>
+    /// <param name="oldLayout"></param>
+    /// <param name="newLayout"></param>
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout); 
+
+#pragma region HelperFunctions
+
+    /// <summary>
+    /// Helper function to execute single time use command buffers
+    /// </summary>
+    /// <param name="useTransferPool">Should command be submitted to the transfer command pool. Will be submitted to the graphics pool otherwise.</param>
+    /// <returns></returns>
+    VkCommandBuffer beginSingleTimeCommands(bool useTransferPool=false); 
+
+    /// <summary>
+    /// Helper function to end execution of single time use command buffer
+    /// </summary>
+    /// <param name="commandBuffer"></param>
+    /// <param name="useTransferPool">Was command buffer submitted to the transfer pool. Assumed graphics pool otherwise.</param>
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer, bool useTransferPool=false);
 
     static std::vector<char> readFile(const std::string& filename) {
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -442,6 +495,8 @@ private:
         auto app = reinterpret_cast<HelloSquareApplication*>(glfwGetWindowUserPointer(window));
         app->frameBufferResized = true;
     }
+
+#pragma endregion
 
 #pragma region Unused Functions
     //VkPipelineColorBlendAttachmentState createAlphaColorBlending();

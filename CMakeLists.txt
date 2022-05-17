@@ -2,16 +2,21 @@
 # project specific logic here.
 #
 cmake_minimum_required (VERSION 3.8)
+project("HelloSquareTextured")
 
 find_package(Vulkan REQUIRED FATAL_ERROR)
 
-# Add source to this project's executable.
-add_executable (HelloSquare "src/HelloSquare.cpp" "src/HelloSquare.h" "src/HelloSquareApplication.cpp" "src/HelloSquareApplication.h" "src/VertexColor.h" "src/VertexColor.cpp" "src/Vertex.h" "src/VulkanObject.h" "src/VulkanObject.cpp")
+#set (HEADERS "external/stb/stb_image.h")
+#"external/stb/stb_image.h"
 
-set_property(TARGET HelloSquare PROPERTY CXX_STANDARD 17)
+# Add source to this project's executableo.
+add_executable (HelloSquareTextured "src/HelloSquare.cpp" "src/HelloSquare.h" "src/HelloSquareApplication.cpp" "src/HelloSquareApplication.h" "src/VertexColor.h" "src/VertexColor.cpp" "src/Vertex.h" "src/VulkanObject.h" "src/VulkanObject.cpp")
+
+set_property(TARGET HelloSquareTextured PROPERTY CXX_STANDARD 17)
 
 #configure_file("${cmake_source_dir}/shaders/vertshader_7.vert" "${cmake_current_binary_dir}" copyonly)
 #configure_file("${cmake_source_dir}/shaders/fragShader_3.frag" "${cmake_current_binary_dir}" copyonly)
+file(COPY "${CMAKE_SOURCE_DIR}/media/images/texture.png" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/media/images")
 
 add_subdirectory("external/glfw")
 add_subdirectory("external/glm")
@@ -24,16 +29,16 @@ else()
 endif()
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
-    "shaders/*.frag"
-    "shaders/*.vert"
-    )
+    "media/shaders/*.frag"
+    "media/shaders/*.vert"
+)
 
 foreach(GLSL ${GLSL_SOURCE_FILES})
   get_filename_component(FILE_NAME ${GLSL} NAME)
-  set(SPIRV "${PROJECT_BINARY_DIR}/shaders/${FILE_NAME}.spv")
+  set(SPIRV "${PROJECT_BINARY_DIR}/media/shaders/${FILE_NAME}.spv")
   add_custom_command(
     OUTPUT ${SPIRV}
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/media/shaders/"
     COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
     DEPENDS ${GLSL})
   list(APPEND SPIRV_BINARY_FILES ${SPIRV})
@@ -44,37 +49,36 @@ add_custom_target(
     DEPENDS ${SPIRV_BINARY_FILES}
     )
 
-add_dependencies(HelloSquare Shaders)
+add_dependencies(HelloSquareTextured Shaders)
 
-add_custom_command(TARGET HelloSquare POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:HelloSquare>/shaders/"
+add_custom_command(TARGET HelloSquareTextured POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:HelloSquareTextured>/media/shaders"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_BINARY_DIR}/shaders"
-        "$<TARGET_FILE_DIR:HelloSquare>/shaders"
+        "${PROJECT_BINARY_DIR}/media/shaders"
+        "$<TARGET_FILE_DIR:HelloSquareTextured>/media/shaders"
 )
 
+#include_directories("external/stb")
 
 if (WIN32)
-	target_include_directories(HelloSquare PUBLIC "${PROJECT_BINARY_DIR}/"
-												  "${PROJECT_BINARY_DIR}/classes/"
-												  "${PROJECT_BINARY_DIR}/interfaces/"
-												  "${PROJECT_BINARY_DIR}/structs/"
+	target_include_directories(HelloSquareTextured PRIVATE "${PROJECT_BINARY_DIR}/"
 												  "external/glfw/include"
-												  "external/glm/"
+												  "external/glm"
+												  "external/stb"
 												  "${Vulkan_INCLUDE_DIRS}")
-	target_link_libraries(HelloSquare "${Vulkan_LIBRARIES}"
+	target_link_libraries(HelloSquareTextured "${Vulkan_LIBRARIES}"
 									  glfw "${GLFW_LIBRARIES}"
 									  )
 	endif (WIN32)
 
 if (UNIX)						  
 	find_package(glm REQUIRED FATAL_ERROR)
-	target_include_directories(HelloSquare PUBLIC 
+	target_include_directories(HelloSquareTextured PUBLIC 
 													"${PROJECT_BINARY_DIR}"
 													"${GLFW_INCLUDE_DIR}"
 													"${GLM_INCLUDE_DIR}"
 													"${Vulkan_INCLUDE_DIRS}")
-	target_link_libraries(HelloSquare)
+	target_link_libraries(HelloSquareTextured)
 													
 endif (UNIX)
 
