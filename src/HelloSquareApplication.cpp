@@ -156,6 +156,7 @@ void HelloSquareApplication::drawFrame() {
 void HelloSquareApplication::cleanup() {
     cleanupSwapChain();
 
+    vkDestroyImageView(device, textureImageView, nullptr); 
     vkDestroyImage(device, textureImage, nullptr); 
     vkFreeMemory(device, textureImageMemory, nullptr); 
 
@@ -249,6 +250,7 @@ void HelloSquareApplication::initVulkan() {
     createFramebuffers();
     createCommandPools();
     createTextureImage(); 
+    createTextureImageView(); 
     createVertexBuffer();
     createIndexBuffer(); 
     createRenderingBuffers(); 
@@ -1558,6 +1560,11 @@ void HelloSquareApplication::createFenceImageTracking() {
     imagesInFlight.resize(swapChainImages.size(), VK_NULL_HANDLE);
 
     //initially, no frame is using any image so this is going to be created without an explicit link
+}
+
+void HelloSquareApplication::createTextureImageView()
+{
+    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT); 
 }
 
 void HelloSquareApplication::createVertexBuffer() { 

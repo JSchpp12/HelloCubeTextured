@@ -100,6 +100,7 @@ private:
     size_t currentFrame = 0;
 
     //texture information
+    VkImageView textureImageView; 
     VkImage textureImage; 
     VkDeviceMemory textureImageMemory; 
 
@@ -388,6 +389,11 @@ private:
     /// Create tracking information in order to link fences with the swap chain images using 
     /// </summary>
     void createFenceImageTracking();
+
+    /// <summary>
+    /// Create the image view for the texture image
+    /// </summary>
+    void createTextureImageView(); 
 
     /// <summary>
     /// Create a vertex buffer to hold the vertex information that will be passed to the GPU. 
