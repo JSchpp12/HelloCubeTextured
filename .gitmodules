@@ -13,3 +13,6 @@
 [submodule "external/stb"]
 	path = external/stb
 	url = https://github.com/nothings/stb.git
+[submodule "external/moltenVK"]
+	path = external/moltenVK
+	url = https://github.com/KhronosGroup/MoltenVK.git

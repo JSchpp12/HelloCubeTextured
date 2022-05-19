@@ -2,12 +2,8 @@
 # project specific logic here.
 #
 cmake_minimum_required (VERSION 3.8)
+
 project("HelloSquareTextured")
-
-find_package(Vulkan REQUIRED FATAL_ERROR)
-
-#set (HEADERS "external/stb/stb_image.h")
-#"external/stb/stb_image.h"
 
 # Add source to this project's executableo.
 add_executable (HelloSquareTextured "src/HelloSquare.cpp" "src/HelloSquare.h" "src/HelloSquareApplication.cpp" "src/HelloSquareApplication.h" "src/VertexColor.h" "src/VertexColor.cpp" "src/Vertex.h" "src/VulkanObject.h" "src/VulkanObject.cpp")
@@ -21,47 +17,55 @@ file(COPY "${CMAKE_SOURCE_DIR}/media/images/texture.png" DESTINATION "${CMAKE_CU
 add_subdirectory("external/glfw")
 add_subdirectory("external/glm")
 
-#compile shaders 
-if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
-  set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin/glslangValidator.exe")
-else()
-  set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin32/glslangValidator.exe")
-endif()
-
+#gather shader files 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
-    "media/shaders/*.frag"
-    "media/shaders/*.vert"
+	"media/shaders/*.frag"
+	"media/shaders/*.vert"
 )
 
-foreach(GLSL ${GLSL_SOURCE_FILES})
-  message("Building")
-  get_filename_component(FILE_NAME ${GLSL} NAME)
-  set(SPIRV "${PROJECT_BINARY_DIR}/media/shaders/${FILE_NAME}.spv")
-  add_custom_command(
-    OUTPUT ${SPIRV}
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/media/shaders/"
-    COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
-    DEPENDS ${GLSL})
-  list(APPEND SPIRV_BINARY_FILES ${SPIRV})
-endforeach(GLSL)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+	#for mac use MoltenVK 
+	add_subdirectory("external/moltenVK")
+	message("Mac based system detected")
+    set(MACOSX TRUE)
+else()
+	#winodws and linux
+	find_package(Vulkan REQUIRED FATAL_ERROR)
 
-add_custom_target(
-    Shaders 
-    DEPENDS ${SPIRV_BINARY_FILES}
-    )
+	#compile shaders 
+	#gather shader files 
+	if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+		set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin/glslangValidator.exe")
+	else()
+		set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin32/glslangValidator.exe")
+	endif()
 
-add_dependencies(HelloSquareTextured Shaders)
+	foreach(GLSL ${GLSL_SOURCE_FILES})
+	  message("Building")
+	  get_filename_component(FILE_NAME ${GLSL} NAME)
+	  set(SPIRV "${PROJECT_BINARY_DIR}/media/shaders/${FILE_NAME}.spv")
+	  add_custom_command(
+		OUTPUT ${SPIRV}
+		COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/media/shaders/"
+		COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
+		DEPENDS ${GLSL})
+	  list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+	endforeach(GLSL)
 
-add_custom_command(TARGET HelloSquareTextured POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:HelloSquareTextured>/media/shaders"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_BINARY_DIR}/media/shaders"
-        "$<TARGET_FILE_DIR:HelloSquareTextured>/media/shaders"
-)
+	add_custom_target(
+		Shaders 
+		DEPENDS ${SPIRV_BINARY_FILES}
+		)
 
-#include_directories("external/stb")
+	add_dependencies(HelloSquareTextured Shaders)
 
-if (WIN32)
+	add_custom_command(TARGET HelloSquareTextured POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:HelloSquareTextured>/media/shaders"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			"${PROJECT_BINARY_DIR}/media/shaders"
+			"$<TARGET_FILE_DIR:HelloSquareTextured>/media/shaders"
+	)
+
 	target_include_directories(HelloSquareTextured PRIVATE "${PROJECT_BINARY_DIR}/"
 												  "external/glfw/include"
 												  "external/glm"
@@ -70,7 +74,7 @@ if (WIN32)
 	target_link_libraries(HelloSquareTextured "${Vulkan_LIBRARIES}"
 									  glfw "${GLFW_LIBRARIES}"
 									  )
-	endif (WIN32)
+endif()
 
 if (UNIX)						  
 	find_package(glm REQUIRED FATAL_ERROR)

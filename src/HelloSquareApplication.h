@@ -1,4 +1,11 @@
 #pragma once
+
+//check for winodws/linux (vulkan) or mac (moltenVK)
+//
+//#ifdef _WIN32
+//    
+//#endif
+
 #define GLFW_INCLUDE_VULKAN
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE //force GLM to use vulkan's perspective projection matrix range of 0.0 to 1.0
