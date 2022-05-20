@@ -1,6 +1,7 @@
 #include "VulkanObject.h"
 
-VulkanObject::VulkanObject()
+
+VulkanObject::~VulkanObject()
 {
 
 }
@@ -14,6 +15,17 @@ VulkanObject::VulkanObject(std::vector<Vertex>* verticies, std::vector<uint16_t>
 {
 	this->vertexList = *verticies; 
 	this->indicies = *indicies; 
+}
+
+void VulkanObject::AddShader(vk::ShaderStageFlagBits stage, std::string pathToFile)
+{
+	if (stage == vk::ShaderStageFlagBits::eFragment) {
+		this->vertexShader = new GLSLShader(stage, pathToFile);
+	}
+	else {
+		this->fragShader = new GLSLShader(stage, pathToFile); 
+	}
+
 }
 
 std::vector<Vertex> VulkanObject::GetVerticies()

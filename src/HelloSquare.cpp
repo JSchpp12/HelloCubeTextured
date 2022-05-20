@@ -6,6 +6,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <vulkan/vulkan.hpp>
 
 int main() {
     std::unique_ptr<HelloSquareApplication> app; 
@@ -39,6 +40,7 @@ int main() {
         });
 
         VulkanObject newObject = VulkanObject(newVerticies.get(), newIndicies.get());
+        newObject.AddShader(vk::ShaderStageFlagBits::eVertex, "./media/shaders/vertShader.vert"); 
         //load objects into list
         objectList->push_back(newObject);
 
