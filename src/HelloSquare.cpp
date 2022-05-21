@@ -7,11 +7,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <vulkan/vulkan.hpp>
+#include "ShadercHelper.h"
 
 int main() {
     std::unique_ptr<HelloSquareApplication> app; 
-    //initalize needed services 
-    GLSlangHelper::Init(); 
 
     //storage for graphics objects
     std::unique_ptr<std::vector<VulkanObject>> objectList(new std::vector<VulkanObject>);

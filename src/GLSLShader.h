@@ -2,7 +2,6 @@
 #include "Enums.h"
 #include "GLSlangHelper.h"
 
-#include <glslang/SPIRV/GlslangToSpv.h>
 #include <stdexcept>
 #include <string>
 #include <list>

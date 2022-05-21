@@ -4,7 +4,7 @@ GLSLShader::GLSLShader(vk::ShaderStageFlagBits stage, std::string pathToFile)
 {
 	std::string shaderCode = this->ReadShaderFile(pathToFile); 
 	const char* rawShaderCode = shaderCode.c_str(); 
-	this->Compile(stage, rawShaderCode);
+	//this->Compile(stage, rawShaderCode);
 }
 
 void GLSLShader::Compile(vk::ShaderStageFlagBits stage, const char* shaderCode)
@@ -12,12 +12,12 @@ void GLSLShader::Compile(vk::ShaderStageFlagBits stage, const char* shaderCode)
 	//std::list<glslang::TShader*> shaders; 
 
 	//might need to look into using these messages 
-	EShMessages messages = EShMsgDefault; 
+	//EShMessages messages = EShMsgDefault; 
 
-	std::unique_ptr<glslang::TShader> shader(new glslang::TShader(this->stage)); 
+	//std::unique_ptr<glslang::TShader> shader(new glslang::TShader(this->stage)); 
 
-	std::vector<unsigned int> shaderCodeSpirV; 
-	bool success = GLSlangHelper::GLSLtoSPV(stage, shaderCode, shaderCodeSpirV); 
+	//std::vector<unsigned int> shaderCodeSpirV; 
+	//bool success = GLSlangHelper::GLSLtoSPV(stage, shaderCode, shaderCodeSpirV); 
 }
 
 EShLanguage GLSLShader::GetLanguage(STAR_SHADER_STAGE stage)
