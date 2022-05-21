@@ -15,8 +15,7 @@ find_package(Vulkan REQUIRED FATAL_ERROR)
 #find_package(Vulkan COMPONENTS glslc)
 
 #TODO: NEED TO USE SPIRV-TOOLS IN VULKAN SDK...build too slow
-add_subdirectory("external/googletest")
-add_subdirectory("external/spirvheaders")
+
 #prepare requirenmnets for spirv-headers 
 
 #[[
@@ -93,7 +92,8 @@ if (GIT_FOUND)
 	endif()
 endif()
 
-
+add_subdirectory("external/googletest")
+add_subdirectory("external/spirvheaders")
 add_subdirectory("external/glfw")
 add_subdirectory("external/glm")
 add_subdirectory("external/glslang")
