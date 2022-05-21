@@ -6,8 +6,6 @@ find_package(Git)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
 
 option(PREP_EXTERNAL_PACKAGES "Build external libraries if they are not found" ON)
 option(UPDATE_SUBMODULES "If building external libraries, check for updates and existence of needed submodules" ON)
