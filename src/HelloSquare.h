@@ -5,6 +5,7 @@
 
 #include "VulkanObject.h"
 #include "Vertex.h"
+#include "GLSlangHelper.h"
 
 #include <vector>
 // TODO: Reference additional headers your program requires here.

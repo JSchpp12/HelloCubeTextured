@@ -169,7 +169,7 @@ struct GLSlangHelper {
 			return false;
 		}
 
-		glslang::GlslangToSpv(*program.getIntermediate(stage), spirv);
+		//glslang::GlslangToSpv(*program.getIntermediate(stage), spirv);
 		return true;
 	}
 };

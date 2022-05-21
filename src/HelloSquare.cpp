@@ -10,6 +10,8 @@
 
 int main() {
     std::unique_ptr<HelloSquareApplication> app; 
+    //initalize needed services 
+    GLSlangHelper::Init(); 
 
     //storage for graphics objects
     std::unique_ptr<std::vector<VulkanObject>> objectList(new std::vector<VulkanObject>);
@@ -58,6 +60,7 @@ int main() {
         } while (std::cin.get() != '\n');
         return EXIT_FAILURE;
     }
+    GLSlangHelper::Finalize(); 
 
     return EXIT_SUCCESS;
 }

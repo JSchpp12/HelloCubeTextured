@@ -52,5 +52,5 @@ private:
 	/// Read the shader file into memory and place into memory
 	/// </summary>
 	/// <param name="shaderFile"></param>
-	void ReadShaderFile(std::string pathToFile, std::unique_ptr<const char> &shaderFile);
+	std::string ReadShaderFile(std::string pathToFile);
 };

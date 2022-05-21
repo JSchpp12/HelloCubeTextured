@@ -2,9 +2,12 @@
 # project specific logic here.
 #
 cmake_minimum_required (VERSION 3.8)
+find_package(Git)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+option(PREP_EXTERNAL_PACKAGES "Prepare dependencies for external projects" ON)
 
 project("HelloSquareTextured")
 
@@ -12,10 +15,90 @@ find_package(Vulkan REQUIRED FATAL_ERROR)
 #find_package(Vulkan COMPONENTS glslc)
 
 #TODO: NEED TO USE SPIRV-TOOLS IN VULKAN SDK...build too slow
-#add_subdirectory("external/spirvheaders")
+add_subdirectory("external/googletest")
+add_subdirectory("external/spirvheaders")
+#prepare requirenmnets for spirv-headers 
+
+#[[
+if(PREP_EXTERNAL_PACKAGES)
+	message("Preparing required modules for external dependencies")
+	
+	#spirvtools 
+	find_library(EFFCEE_LIB NAME effcee HINTS ${CMAKE_CURRENT_SOURCE_DIR}/external/spirvtools/external)
+	set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/spirvtools/external")
+	set(EXTERN_CONTENT "")
+	if (NOT EFFCEE_LIB AND NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/spirvtools/external/effcee")
+		message("effcee not found, fetching...")
+		list(APPEND EXTERN_CONTENT effcee)
+		FetchContent_Declare(
+			effcee
+			GIT_REPOSITORY "https://github.com/google/effcee"
+			GIT_TAG "33d438fb1939e94e5507d38dee9d999f60a03d96")
+	endif()
+
+	find_library(RE2_LIB NAME re2 HINTS ${CMAKE_CURRENT_SOURCE_DIR}/external/spirvtools/external)
+	if (NOT RE2_LIB AND NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/spirvtools/external/re2-src")
+		message("re2 not found, fetching...")
+		list(APPEND EXTERN_CONTENT re2)
+		FetchContent_Declare(
+			re2 
+			GIT_REPOSITORY "https://github.com/google/re2"
+			GIT_TAG "0c5616df9c0aaa44c9440d87422012423d91c7d1")
+	endif()
+	list(LENGTH EXTERN_CONTENT EXTERN_LENGTH)
+	if(NOT EXTERN_LENGTH EQUAL "0")
+		FetchContent_MakeAvailable(${EXTERN_CONTENT})
+	endif()
+endif()]]
+
+if (GIT_FOUND)
+	option(GIT_SUBMODULE "Checking submodules during build" ON)
+	if(GIT_SUBMODULE)
+		message(STATUS "Submodule update")
+		execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+			RESULT_VARIABLE GIT_SUBMOD_RESULT)
+		if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+			message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+		endif()
+
+	endif()
+
+	if(PREP_EXTERNAL_PACKAGES)
+		message("Preparing requirenments for external dependencies")
+		message("Preparing dependencies for spirvtools")
+		find_library(EFFCEE_LIB NAME effcee HINTS ${CMAKE_CURRENT_SOURCE_DIR}/external/spirvtools/external)
+		if (NOT EFFCEE_LIB AND NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/spirvtools/external/effcee")
+			message("effcee is required for spirvtools and was not found, fetching...")
+			execute_process(COMMAND ${GIT_EXECUTABLE} clone https://github.com/google/effcee.git
+				WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/external/spirvtools/external"
+				RESULT_VARIABLE GIT_EFFCEE_RESULT
+			)
+			if (NOT GIT_EFFCEE_RESULT EQUAL "0")
+				message(FATAL_ERROR "effcee is needed for building spirvtools, fetch into required dir")
+			endif()
+		endif()
+
+		find_library(RE2_LIB NAME re2 HINTS ${CMAKE_CURRENT_SOURCE_DIR}/external/spirvtools/external)
+		if (NOT RE2_LIB AND NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/spirvtools/external/re2")
+			message("re2 is required for spirvtools and was not found, fetching...")
+			execute_process(COMMAND ${GIT_EXECUTABLE} clone https://github.com/google/re2.git
+				WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/external/spirvtools/external"
+				RESULT_VARIABLE GIT_RE2_RESULT
+			)
+			if (NOT GIT_RE2_RESULT EQUAL "0")
+				message(FATAL_ERROR "re2 is needed for building spirvtools, fetch into required dir")
+			endif()
+		endif()
+	endif()
+endif()
+
+
 add_subdirectory("external/glfw")
 add_subdirectory("external/glm")
 add_subdirectory("external/glslang")
+add_subdirectory("external/spirvtools")
+add_subdirectory("external/shaderc")
 
 
 find_library(glslang_LIBRARY NAMES glslang HINTS "$ENV{VULKAN_SDK}/lib")

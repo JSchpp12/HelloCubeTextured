@@ -2,10 +2,9 @@
 
 GLSLShader::GLSLShader(vk::ShaderStageFlagBits stage, std::string pathToFile)
 {
-	std::unique_ptr<const char> shaderCode; 
-
-	this->ReadShaderFile(pathToFile, shaderCode); 
-	this->Compile(stage, shaderCode.get()); 
+	std::string shaderCode = this->ReadShaderFile(pathToFile); 
+	const char* rawShaderCode = shaderCode.c_str(); 
+	this->Compile(stage, rawShaderCode);
 }
 
 void GLSLShader::Compile(vk::ShaderStageFlagBits stage, const char* shaderCode)
@@ -38,16 +37,16 @@ EShLanguage GLSLShader::GetLanguage(STAR_SHADER_STAGE stage)
 	return EShLanguage();
 }
 
-void GLSLShader::ReadShaderFile(std::string pathToFile, std::unique_ptr<const char>& shaderFile)
+std::string GLSLShader::ReadShaderFile(std::string pathToFile)
 {
 	//read in file 
-	//std::string line, text;
-	//std::ifstream fileReader(pathToFile);
-	//std::unique_ptr<const char> shaderCode;
+	std::string line, text;
+	std::ifstream fileReader(pathToFile);
 
-	//while (std::getline(fileReader, line)) {
-	//	text += line + "\n";
-	//}
+	while (std::getline(fileReader, line)) {
+		text += line + "\n";
+	}
 
-	//shaderFile = std::make_unique<const char>(text.c_str()); 
+	return(text); 
+	//shaderFile = std::unique_ptr<const char>(text.c_str());
 }
