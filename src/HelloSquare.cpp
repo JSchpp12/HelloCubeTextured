@@ -59,7 +59,6 @@ int main() {
         } while (std::cin.get() != '\n');
         return EXIT_FAILURE;
     }
-    GLSlangHelper::Finalize(); 
 
     return EXIT_SUCCESS;
 }

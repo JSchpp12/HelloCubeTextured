@@ -5,13 +5,6 @@
 #include <vulkan/vulkan.hpp>
 
 struct GLSlangHelper {
-	static void Init() {
-		glslang::InitializeProcess();
-	}
-
-	static void Finalize() {
-		glslang::FinalizeProcess();
-	}
 
 	static void InitResources(TBuiltInResource& Resources) {
 		Resources.maxLights = 32;
