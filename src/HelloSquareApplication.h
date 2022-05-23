@@ -304,12 +304,14 @@ private:
     /// </summary>
     void createGraphicsPipeline();
 
+    VkShaderModule createShaderModule(const std::vector<char>& code);
+
     /// <summary>
     /// Create a shader module from bytecode. The shader module is a wrapper around the shader code with function definitions. 
     /// </summary>
     /// <param name="code">bytecode for the shader program</param>
     /// <returns></returns>
-    VkShaderModule createShaderModule(const std::vector<char>& code);
+    VkShaderModule createShaderModule(std::vector<uint32_t>& code);
 
     /// <summary>
     /// Create a rendering pass object which will tell vulkan information about framebuffer attachments:

@@ -1,23 +1,40 @@
 #include "GLSLShader.h"
 
-GLSLShader::GLSLShader(vk::ShaderStageFlagBits stage, std::string pathToFile)
+GLSLShader::GLSLShader()
 {
-	std::string shaderCode = this->ReadShaderFile(pathToFile); 
-	const char* rawShaderCode = shaderCode.c_str(); 
-	//this->Compile(stage, rawShaderCode);
 }
 
-void GLSLShader::Compile(vk::ShaderStageFlagBits stage, const char* shaderCode)
+GLSLShader::GLSLShader(vk::ShaderStageFlagBits stage, std::string pathToFile)
 {
-	//std::list<glslang::TShader*> shaders; 
+	std::string shaderCode = this->ReadShaderFile(pathToFile);
+	const char* rawShaderCode = shaderCode.c_str();
+	this->Compile(pathToFile, ShadercHelper::GetShaderCStageFlag(stage), rawShaderCode);
+}
 
-	//might need to look into using these messages 
-	//EShMessages messages = EShMsgDefault; 
+void GLSLShader::Compile(std::string shaderName, shaderc_shader_kind stage, const char* shaderCode)
+{
+	auto preprocessed = ShadercHelper::preprocess_shader(shaderName, stage, shaderCode); 
 
-	//std::unique_ptr<glslang::TShader> shader(new glslang::TShader(this->stage)); 
+	//compile shader
+	//auto assembly = ShadercHelper::compile_file_to_assembly(shaderName, shaderc_glsl_vertex_shader, shaderCode, false);
+	//std::cout << "Assembled to SPIRV" << std::endl; 
 
-	//std::vector<unsigned int> shaderCodeSpirV; 
-	//bool success = GLSlangHelper::GLSLtoSPV(stage, shaderCode, shaderCodeSpirV); 
+	this->spirv = ShadercHelper::compile_file(shaderName, stage, preprocessed);
+
+	if (spirv.size() == 0) {
+		//failed to compile shader 
+		throw std::runtime_error("Failed to compile shader"); 
+	}
+	std::cout << "Compiled shader:" << shaderName << std::endl;
+
+	//{  // Error case
+	//	const char kBadShaderSource[] =
+	//		"#version 310 es\nint main() { int main_should_be_void; }\n";
+
+	//	std::cout << std::endl << "Compiling a bad shader:" << std::endl;
+	//	auto result = ShadercHelper::compile_file("bad_src", shaderc_glsl_vertex_shader, kBadShaderSource);
+	//}
+
 }
 
 EShLanguage GLSLShader::GetLanguage(STAR_SHADER_STAGE stage)

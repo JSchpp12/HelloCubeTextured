@@ -1,4 +1,4 @@
-﻿6// HelloSquare.h : Include file for standard system include files,
+﻿// HelloSquare.h : Include file for standard system include files,
 // or project specific include files.
 
 #pragma once

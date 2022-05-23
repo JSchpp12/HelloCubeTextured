@@ -12,11 +12,11 @@
 
 class VulkanObject {
 public:
+	~VulkanObject();
 	/// <summary>
 	/// Default constructor for a vulkan object
 	/// </summary>
 	//VulkanObject();
-	~VulkanObject(); 
 	VulkanObject(std::vector<Vertex> verticies); 
 	/// <summary>
 	/// Ordered drawing of verticies
@@ -33,13 +33,19 @@ public:
 	std::vector<Vertex> GetVerticies(); 
 
 	std::vector<uint16_t> GetIndicies(); 
+
+	std::vector<Shader> GetShaders(); 
+
+	Shader GetVertShader(); 
+
+	Shader GetFragShader(); 
 protected:
 
 private:
 	std::vector<Vertex> vertexList; 
 	std::vector<uint16_t> indicies; 
-	GLSLShader* vertexShader = nullptr; 
-	GLSLShader* fragShader = nullptr; 
+	GLSLShader vertexShader; 
+	GLSLShader fragShader; 
 	//TODO: implement positional elements
 #pragma region todo
 	////current position of the object

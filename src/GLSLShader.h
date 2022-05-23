@@ -1,6 +1,8 @@
 #pragma once 
 #include "Enums.h"
 #include "GLSlangHelper.h"
+#include "ShadercHelper.h"
+#include "Shader.h"
 
 #include <stdexcept>
 #include <string>
@@ -13,11 +15,11 @@
 //TODO: dynamically find what type of shader is being used from the file name (i.e. "shader.vert" = vertex (.vert))
 
 //shader class generated from a GLSL shader file
-class GLSLShader {
+class GLSLShader : public Shader{
 public: 
 	bool shaderReady = false; 
 
-	GLSLShader(GLSLShader&&) = default;
+	GLSLShader(); 
 
 	/// <summary>
 	/// Constructor which compiles and links the shader provided. 
@@ -32,7 +34,7 @@ protected:
 	/// <summary>
 	/// Call to compile and link the actual shader file
 	/// </summary>
-	void Compile(vk::ShaderStageFlagBits stage, const char* shaderCode);
+	void Compile(std::string shaderName, shaderc_shader_kind stage, const char* shaderCode);
 
 private: 
 	std::string pathToFile;
