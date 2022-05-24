@@ -8,8 +8,8 @@
 #include <vulkan/vulkan.hpp>
 #include <tiny_obj_loader.h>
 
-#include <glm/glm.hpp>
 #include <vector>
+#include <unordered_map>
 
 class VulkanObject {
 public:
