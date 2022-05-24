@@ -3,33 +3,11 @@
 typedef std::chrono::high_resolution_clock Clock;
 
 bool HelloSquareApplication::spin = true; 
-bool HelloSquareApplication::useGeneratedColors = true; 
-bool HelloSquareApplication::useVertexColors = false; 
-bool HelloSquareApplication::useTextures = false; 
 
 void HelloSquareApplication::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (action == GLFW_PRESS) {
-        switch (key) {
-            case GLFW_KEY_0:
-                spin = spin ? false : true;
-                break; 
-            case GLFW_KEY_1: 
-                useVertexColors = true;
-                useGeneratedColors = false;
-                useTextures = false;
-                break; 
-            case GLFW_KEY_2: 
-                useVertexColors = false;
-                useGeneratedColors = true; 
-                useTextures = false;
-                break; 
-            case GLFW_KEY_3: 
-                useVertexColors = false;
-                useGeneratedColors = false;
-                useTextures = true;
-                break;
-        }
+        NULL; 
     }
 }
 
@@ -1575,7 +1553,7 @@ void HelloSquareApplication::createCommandBuffers() {
         //bind vertex buffers -> how to pass information to the vertex shader once it is uploaded to the GPU
         vkCmdBindVertexBuffers(graphicsCommandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-        vkCmdBindIndexBuffer(graphicsCommandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16); 
+        vkCmdBindIndexBuffer(graphicsCommandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32); 
 
         /* vkCmdBindDescriptorSets: 
         *   1. 
@@ -1719,7 +1697,7 @@ void HelloSquareApplication::createIndexBuffer()
     //TODO: will only support one object at the moment
 
     VulkanObject* currObject = &objectList->at(0); 
-    std::vector<uint16_t> indicies = currObject->GetIndicies(); 
+    std::vector<uint32_t> indicies = currObject->GetIndicies(); 
 
     bufferSize = sizeof(indicies[0]) * indicies.size();
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
@@ -1885,24 +1863,6 @@ void HelloSquareApplication::updateUniformBuffer(uint32_t currentImage)
     
     //glm designed for openGL where the Y coordinate of the flip coordinates is inverted. Fix this by flipping the sign on the scaling factor of the Y axis in the projection matrix.
     ubo.proj[1][1] *= -1; 
-    
-    for (size_t i = 0; i < vertexColors.size(); i++) {
-        vertexColors[i].UpdateColor(0.0001f); 
-    }
-    
-    //update color controls
-    ubo.useGeneratedColor = useGeneratedColors; 
-    ubo.useVertexColors = useVertexColors;
-    ubo.useTextures = useTextures; 
-
-    ubo.color1 = vertexColors[0].GetVertexColor(); 
-    ubo.color2 = vertexColors[1].GetVertexColor();
-    ubo.color3 = vertexColors[2].GetVertexColor();
-    ubo.color4 = vertexColors[3].GetVertexColor();
-    ubo.color5 = vertexColors[4].GetVertexColor();
-    ubo.color6 = vertexColors[5].GetVertexColor();
-    ubo.color7 = vertexColors[6].GetVertexColor();
-    ubo.color8 = vertexColors[7].GetVertexColor();
 
     //copy data to the current uniform buffer 
     void* data; 
