@@ -83,6 +83,7 @@ void VulkanObject::LoadObjFile(std::string pathToFile)
 	//need to scale object so that it fits on screen
 	
 	float maxVal = 0; 
+	std::unordered_map<Vertex, uint32_t> uniqueVerticies{}; 
 
 	//combine all attributes into a single object 
 	for (const auto& shape : shapes) {
@@ -113,8 +114,12 @@ void VulkanObject::LoadObjFile(std::string pathToFile)
 				attrib.texcoords[2 * index.texcoord_index + 1]
 			};
 
-			this->vertexList.push_back(vertex);
-			this->indicies.push_back(indicies.size());
+			if (uniqueVerticies.count(vertex) == 0) {
+				uniqueVerticies[vertex] = static_cast<uint32_t>(vertexList.size());
+				vertexList.push_back(vertex); 
+			}
+
+			this->indicies.push_back(uniqueVerticies[vertex]);
 		}
 	}
 
