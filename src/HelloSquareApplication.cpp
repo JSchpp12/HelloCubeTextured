@@ -1249,7 +1249,7 @@ void HelloSquareApplication::createTextureImage()
 {
     int texWidth, texHeight, texChannels; 
 
-    stbi_uc* pixels = stbi_load("media/images/texture.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha); 
+    stbi_uc* pixels = stbi_load("media/models/lion-statue/source/material0_basecolor.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha); 
     VkDeviceSize imageSize = texWidth * texHeight * 4; 
 
     if (!pixels) {
