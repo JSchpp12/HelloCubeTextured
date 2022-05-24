@@ -8,14 +8,16 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MACOSX_RPATH 1)
 
+#TODO: add ability to rely on installed libraries 
+#THIS IS NEEDED FOR NOW...
 option(BUILD_LIBRARIES "Build external libraries" ON)
+
 option(UPDATE_SUBMODULES "If building external libraries, check for updates and existence of needed submodules" ON)
 option(PULL_SUBMODULE "Check and pull updates for git submodules if needed" ON)
 
 project("HelloSquareTextured")
 
 find_package(Vulkan REQUIRED FATAL_ERROR)
-#find_package(Vulkan COMPONENTS glslc)
 
 if (GIT_FOUND)
 	if(GIT_SUBMODULE AND PULL_SUBMODULE)
@@ -58,6 +60,11 @@ if (GIT_FOUND)
 	message("Prep Complete")
 endif()
 
+set(LINK_INCLUDE "")		#list of libs found on system
+set(LINK_SUBMODULE "")
+
+find_library(TINY_OBJ_LOADER_LIB NAMES tinyobjloader)
+
 #set(gtest_force_shared_crt on)
 #add_subdirectory("external/googletest")
 #set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -92,6 +99,9 @@ if(BUILD_LIBRARIES)
 	set(SHADERC_ENABLE_SHARED_CRT ON CACHE BOOL "" FORCE)
 	set(SHADERC_SKIP_COPYRIGHT_CHECK ON CACHE BOOL "" FORCE)
 	add_subdirectory("external/shaderc")
+
+	add_subdirectory("external/tinyobjloader")
+
 endif()
 
 #[[Keeping these for now, as of now -- reliant on submodules for build
@@ -132,7 +142,7 @@ set(LIBRARIES_DEBUG
 #set(GLSLANG_LINK_LIBS_DEBUG glslang ${glslang_OGLCOMPILER_DEBUG} SPIRV ${glslang_HLSL_DEBUG} ${glslang_OSDEPENDENT_DEBUG} MachineIndependentd GenericCodeGend SPIRV-Tools-optd SPIRV-Toolsd SPVRemapperd )
 
 # Add source to this project's executableo.
-add_executable (HelloSquareTextured "src/HelloSquare.cpp" "src/HelloSquare.h" "src/HelloSquareApplication.cpp" "src/HelloSquareApplication.h" "src/VertexColor.h" "src/VertexColor.cpp" "src/Vertex.h" "src/VulkanObject.h" "src/VulkanObject.cpp" "src/Shader.h" "src/Shader.cpp" "src/GLSLShader.h" "src/GLSLShader.cpp" "src/Enums.h" "src/GLSlangHelper.h"  "src/Constants.h" "src/ShadercHelper.h")
+add_executable (HelloSquareTextured "src/HelloSquare.cpp" "src/HelloSquare.h" "src/HelloSquareApplication.cpp" "src/HelloSquareApplication.h" "src/VertexColor.h" "src/VertexColor.cpp" "src/Vertex.h" "src/VulkanObject.h" "src/VulkanObject.cpp" "src/Shader.h" "src/Shader.cpp" "src/GLSLShader.h" "src/GLSLShader.cpp" "src/Enums.h" "src/GLSlangHelper.h"  "src/Constants.h" "src/ShadercHelper.h"  )
 
 set_property(TARGET HelloSquareTextured PROPERTY CXX_STANDARD 17)
 
@@ -143,6 +153,10 @@ set_property(TARGET HelloSquareTextured PROPERTY CXX_STANDARD 17)
 file(COPY "${CMAKE_SOURCE_DIR}/media/images/texture.png" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/media/images")
 file(COPY "${CMAKE_SOURCE_DIR}/media/shaders/fragShader.frag" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/media/shaders")
 file(COPY "${CMAKE_SOURCE_DIR}/media/shaders/vertShader.vert" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/media/shaders")
+file(COPY "${CMAKE_SOURCE_DIR}/media/models/lion-statue/source/rapid.obj" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/media/models/lion-statue/source")
+file(COPY "${CMAKE_SOURCE_DIR}/media/models/lion-statue/source/material0_basecolor.png" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/media/models/lion-statue/source")
+file(COPY "${CMAKE_SOURCE_DIR}/media/models/lion-statue/vertShader.vert" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/media/models/lion-statue")
+file(COPY "${CMAKE_SOURCE_DIR}/media/models/lion-statue/fragShader.frag" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/media/models/lion-statue")
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
     "media/shaders/*.frag"
@@ -159,19 +173,19 @@ target_include_directories(HelloSquareTextured PRIVATE "${PROJECT_BINARY_DIR}/"
 												"external/stb"
 												"external/shaderc/libshaderc/include"
 												"external/shaderc/libshaderrc_util/include"
+												"external/tinyobjloader"
 												"${Vulkan_INCLUDE_DIRS}")
 
 
 target_link_libraries(HelloSquareTextured ${Vulkan_LIBRARIES}
 						glfw ${GLFW_LIBRARIES}
+						shaderc
+						tinyobjloader
 )
 
 
 if(WIN32)
     #libs needed for glfw
-    target_link_libraries(HelloSquareTextured
-        shaderc
-    )
 else()
 	#macos and linux
 endif()

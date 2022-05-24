@@ -48,9 +48,6 @@ private:
 
     /* Runtime Vars */
     static bool spin; 
-    static bool useGeneratedColors; 
-    static bool useVertexColors;
-    static bool useTextures; 
 
     /*Note regarding memory alignment: (N = 4 bytes)
     * Scalars have to be aligned by N
@@ -63,17 +60,6 @@ private:
         alignas(16) glm::mat4 model; 
         alignas(16) glm::mat4 view; 
         alignas(16) glm::mat4 proj; 
-        alignas(4) bool useGeneratedColor; 
-        alignas(4) bool useVertexColors; 
-        alignas(4) bool useTextures; 
-        alignas(16) glm::vec3 color1; 
-        alignas(16) glm::vec3 color2; 
-        alignas(16) glm::vec3 color3; 
-        alignas(16) glm::vec3 color4; 
-        alignas(16) glm::vec3 color5; 
-        alignas(16) glm::vec3 color6; 
-        alignas(16) glm::vec3 color7; 
-        alignas(16) glm::vec3 color8; 
     };
 
     //struct VertexAttributesObject {
