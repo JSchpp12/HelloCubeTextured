@@ -6,6 +6,7 @@ find_package(Git)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_MACOSX_RPATH 1)
 
 option(BUILD_LIBRARIES "Build external libraries" ON)
 option(UPDATE_SUBMODULES "If building external libraries, check for updates and existence of needed submodules" ON)
@@ -110,6 +111,7 @@ find_library(SPIRV_TOOLS_STATIC NAME spirv-tools-static HINTS "$ENV{VULKAN_SDK}/
 find_library(SPIRV_TOOLS_STATIC NAME spirv-tools-staticd HINTS "$ENV{VULKAN_SDK}/lib")]]
 
 link_directories(HelloSquareTextured "$ENV{VULKAN_SDK}/lib")
+link_directories(HelloSquareTextured "external")
 
 set(LIBRARIES
 		glslang 
@@ -151,6 +153,7 @@ message("Is vulkan found? ${VULKAN_FOUND}")
 message("Where is it ${Vulkan_LIBRARY}")
 message("test: ${glslang_SPIRV_DEBUG}")
 target_include_directories(HelloSquareTextured PRIVATE "${PROJECT_BINARY_DIR}/"
+                                                "external"
 												"external/glfw/include"
 												"external/glm"
 												"external/stb"
@@ -163,11 +166,23 @@ target_link_libraries(HelloSquareTextured ${Vulkan_LIBRARIES}
 						glfw ${GLFW_LIBRARIES}
 )
 
-#libs needed for glfw
-target_link_libraries(HelloSquareTextured 
-	shaderc
-)
 
+if(WIN32)
+    #libs needed for glfw
+    target_link_libraries(HelloSquareTextured
+        shaderc
+    )
+else()
+	#macos and linux
+endif()
+
+#if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR )
+	#macos 
+	#target_link_libraries(HelloSquareTextured
+	#	spirv-cross
+	#)
+    
+#endif()
 #pass needed directories to application
 
 # TODO: Add tests and install targets if needed.
